@@ -7,7 +7,7 @@ const SECRET_KEY = new TextEncoder().encode(process.env.JWT_SECRET || 'your-supe
 
 async function getUserNameFromToken(): Promise<string> {
   const cookieStore = cookies();
-  const sessionToken = (await cookieStore).get('session_token')?.value;
+  const sessionToken = cookieStore.get('session_token')?.value;
 
   if (!sessionToken) {
     return 'Guest';
