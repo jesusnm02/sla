@@ -24,6 +24,12 @@ export async function POST(request: Request) {
     if (!isPasswordValid) {
       return NextResponse.json({ error: 'Credenciales inválidas' }, { status: 401 });
     }*/
+    
+    //const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    //if (!isPasswordValid) {
+      //return NextResponse.json({ error: 'Credenciales inválidas' }, { status: 401 });
+    //}
 
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
     const verificationExpiry = new Date(Date.now() + 10 * 60 * 1000);
