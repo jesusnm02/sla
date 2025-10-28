@@ -9,6 +9,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
@@ -16,40 +17,55 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+    setSuccess(null);
 
-    const response = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
 
-    if (response.ok) {
-      setStep('code');
-    } else {
       const data = await response.json();
-      setError(data.message || 'Failed to send verification code.');
+
+      if (!response.ok) {
+        setError(data.error || 'Failed to send verification code.');
+      } else {
+        setSuccess('Código enviado a tu email.');
+        setStep('code');
+      }
+    } catch (err) {
+      setError('An unexpected error occurred.');
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const handleCodeSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+    setSuccess(null);
 
-    const response = await fetch('/api/auth/verify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, verificationCode }),
-    });
+    try {
+      const response = await fetch('/api/auth/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, verificationCode }),
+      });
 
-    if (response.ok) {
-      router.push('/dashboard');
-    } else {
       const data = await response.json();
-      setError(data.message || 'Invalid verification code.');
+
+      if (!response.ok) {
+        setError(data.error || 'Invalid verification code.');
+      } else {
+        router.push('/dashboard');
+      }
+    } catch (err) {
+      setError('An unexpected error occurred.');
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (
@@ -108,7 +124,10 @@ export default function LoginPage() {
             </form>
           </div>
         )}
-        {error && <p className="mt-4 text-sm text-center text-red-600">{error}</p>}
+        <div className="mt-4 text-sm text-center">
+          {error && <p className="text-red-600">{error}</p>}
+          {success && <p className="text-green-600">{success}</p>}
+        </div>
       </div>
     </div>
   );
