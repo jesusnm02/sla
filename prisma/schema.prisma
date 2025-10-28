@@ -1,0 +1,84 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- MODELOS DE LA APLICACIÓN ---
+
+// Modelo 1: Usuarios
+// Almacena la información de los usuarios y los campos para la autenticación MFA.
+model User {
+  id                 String    @id @default(cuid())
+  email              String    @unique
+  name               String
+  password           String    // Contraseña hasheada (bcrypt)
+
+  // Campos específicos para el login MFA (Paso 2)
+  verificationCode   String?   // El código de 6 dígitos enviado por email
+  verificationExpiry DateTime? // La fecha/hora en que expira ese código
+
+  // Timestamps
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}
+
+// Modelo 2: Servicios (Los KPIs Objetivo)
+// Define los 4 servicios críticos y sus objetivos de SLA.
+// Estos son los "objetivos" contra los que compararemos.
+model Service {
+  id    String @id @default(cuid())
+  name  String @unique // Ej: "Registro y cierre contable", "Carga de pedidos"
+
+  // Nivel de Servicio Objetivo (Desempeño)
+  // Almacenado en milisegundos (ej. 2 segundos = 2000)
+  targetSlaPerf Float
+
+  // Nivel de Servicio Objetivo (Disponibilidad)
+  // Almacenado como porcentaje (ej. 99.8)
+  targetSlaAvail Float
+
+  // Relación: Un servicio tiene muchos logs de simulación
+  logs SimulationLog[]
+}
+
+// Modelo 3: Log de Simulación (Los Datos Reales/Ficticios)
+// Esta es la tabla principal donde se guardan todos los datos generados
+// por el módulo de simulación.
+model SimulationLog {
+  id        String   @id @default(cuid())
+  timestamp DateTime @default(now()) // Cuándo se generó el dato
+
+  // Métrica de Desempeño
+  // El tiempo que tardó la simulación (en milisegundos)
+  responseTime Float
+
+  // Métrica de Disponibilidad
+  // true = la simulación fue exitosa
+  // false = la simulación fue una "caída" o error
+  wasSuccessful Boolean
+
+  // Relación: Cada log pertenece a un servicio
+  serviceId String
+  service   Service @relation(fields: [serviceId], references: [id])
+}
+
+// Modelo 4: Penalizaciones
+// Almacena un registro cada vez que el "Motor de Penalizaciones"
+// detecta un incumplimiento grave del SLA (ej. "3 veces por trimestre").
+model Penalty {
+  id        String   @id @default(cuid())
+  timestamp DateTime @default(now()) // Cuándo se registró la penalización
+  reason    String   // La descripción de la regla que se rompió
+  status    String   // Ej: "Registrada", "Resuelta"
+}
